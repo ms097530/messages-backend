@@ -1,5 +1,5 @@
 const express = require('express')
-const { getMessages, postMessage, deleteMessage, updateLikes } = require('../controllers/messages')
+const { getMessages, postMessage, deleteMessage, updateLikes, updateMessage } = require('../controllers/messages')
 
 const router = express.Router()
 
@@ -7,8 +7,10 @@ router.get('/', getMessages)
 
 router.post('/', postMessage)
 
-router.delete('/', deleteMessage)
+router.put('/:messageId', updateMessage)
 
-router.put('/likes', updateLikes)
+router.delete('/:messageId', deleteMessage)
+
+router.put('/likes/:messageId', updateLikes)
 
 module.exports = router

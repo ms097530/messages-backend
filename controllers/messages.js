@@ -16,6 +16,7 @@ exports.getMessages = async (req, res, next) =>
 
 exports.postMessage = async (req, res, next) =>
 {
+    // message represents content, not an entire Message object
     const { message, repliedTo, userId, } = req.body
     try
     {
@@ -40,7 +41,8 @@ exports.deleteMessage = async (req, res, next) =>
     // return messageId
     try
     {
-        const { userId, messageId } = req.body
+        const { userId } = req.body
+        const { messageId } = req.params
         if (!messageId)
         {
             throw new Error('No message ID provided')
@@ -67,7 +69,8 @@ exports.updateLikes = async (req, res, next) =>
 {
     try
     {
-        const { messageId, userId, method } = req.body
+        const { userId, method } = req.body
+        const { messageId } = req.params
         if (!messageId)
         {
             throw new Error('Must provide valid messageId')
@@ -146,4 +149,49 @@ exports.updateLikes = async (req, res, next) =>
         res.status(400).json({ message: err.message })
     }
 
+}
+
+exports.updateMessage = async (req, res, next) =>
+{
+    try
+    {
+        const { userId, content } = req.body
+        const { messageId } = req.params
+        if (!messageId)
+        {
+            throw new Error('Must provide message ID')
+        }
+        if (!userId)
+        {
+            throw new Error('Must provide user ID')
+        }
+        if (!content)
+        {
+            throw new Error('Must provide message body')
+        }
+
+        const message = await Message.findById(messageId)
+        if (!message)
+        {
+            throw new Error('Unable to find message')
+        }
+        const user = await User.findById(userId)
+        if (!user)
+        {
+            throw new Error('Unable to find user')
+        }
+        if (message.user.toString() !== user._id.toString())
+        {
+            throw new Error('Invalid user credentials')
+        }
+
+        message.content = content
+        const savedMessage = await message.save()
+        res.status({ message: 'Message successfully editied', content: savedMessage.content })
+    }
+    catch (err)
+    {
+        console.log(err)
+        res.status(400).json({ message: err.message })
+    }
 }
