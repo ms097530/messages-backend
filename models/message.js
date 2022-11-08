@@ -12,6 +12,10 @@ const messageSchema = Schema({
         ref: 'User',
         required: true
     },
+    likes: {
+        type: Schema.Types.Number,
+        required: true
+    },
     repliedTo: {
         type: Schema.Types.ObjectId,
         ref: 'Message'
