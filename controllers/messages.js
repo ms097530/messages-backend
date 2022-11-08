@@ -68,10 +68,9 @@ exports.updateLikes = async (req, res, next) =>
     try
     {
         const { messageId, userId, method } = req.body
-
         if (!messageId)
         {
-            throw new Error('Must provided valid messageId')
+            throw new Error('Must provide valid messageId')
         }
         if (!method)
         {
@@ -93,7 +92,12 @@ exports.updateLikes = async (req, res, next) =>
         {
             throw new Error('User not found')
         }
+        if (message.user.toString() === userId)
+        {
+            throw new Error('Can not vote on your own message')
+        }
 
+        // if post is already liked or disliked, one of these will return a number >= 0
         const likedPostIndex = user.likedPosts.findIndex((id) => id.toString() === messageId)
         const dislikedPostIndex = user.dislikedPosts.findIndex((id) => id.toString() === messageId)
         // check if message has already been voted on by this user
