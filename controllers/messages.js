@@ -1,4 +1,7 @@
+const { ObjectId } = require('mongodb')
+const message = require('../models/message')
 const Message = require('../models/message')
+const User = require('../models/user')
 
 exports.getMessages = async (req, res, next) =>
 {
@@ -22,7 +25,7 @@ exports.postMessage = async (req, res, next) =>
         message: ${message}
         repliedTo: ${repliedTo}
         userId: ${userId}`)
-        const msg = new Message({ content: message, user: userId, repliedTo: repliedTo })
+        const msg = new Message({ content: message, user: userId, repliedTo: repliedTo, likes: 0 })
         const saveRes = await msg.save()
         res.status(200).json({ message: 'POSTED' })
     }
@@ -31,4 +34,114 @@ exports.postMessage = async (req, res, next) =>
         console.log(err)
         res.status(400).json({ message: 'Incorrect info provided' })
     }
+}
+
+exports.deleteMessage = async (req, res, next) =>
+{
+    // expect to receive userId, messageId
+    // return messageId
+    try
+    {
+        const { userId, messageId } = req.body
+        if (!messageId)
+        {
+            throw new Error('No message ID provided')
+        }
+        const message = await Message.findById(messageId)
+        if (message.user.toString() !== userId)
+        {
+            throw new Error('Invalid user credentials')
+        }
+
+        const removeResponse = await message.remove()
+        console.log(removeResponse)
+
+        res.status(200).json({ message: 'Message successfully deleted', messageId: messageId })
+    }
+    catch (err)
+    {
+        console.log(err)
+        res.status(400).json({ message: err.message })
+    }
+}
+
+exports.updateLikes = async (req, res, next) =>
+{
+    try
+    {
+        const { messageId, userId, method } = req.body
+
+        if (!messageId)
+        {
+            throw new Error('Must provided valid messageId')
+        }
+        if (!method)
+        {
+            throw new Error('Must provide method')
+        }
+        let parsedMethod = method.toLowerCase()
+        if (parsedMethod !== 'up' && parsedMethod !== 'down')
+        {
+            throw new Error('Invalid method specified')
+        }
+
+        const message = await Message.findById(messageId)
+        if (!message)
+        {
+            throw new Error('Message not found')
+        }
+        const user = await User.findById(userId)
+        if (!user)
+        {
+            throw new Error('User not found')
+        }
+
+        const likedPostIndex = user.likedPosts.findIndex((id) => id.toString() === messageId)
+        const dislikedPostIndex = user.dislikedPosts.findIndex((id) => id.toString() === messageId)
+        // check if message has already been voted on by this user
+        if (likedPostIndex >= 0)
+        {
+            user.likedPosts.splice(likedPostIndex, 1)
+            message.likes -= 1
+        }
+        else if (dislikedPostIndex >= 0)
+        {
+            user.dislikedPosts.splice(dislikedPostIndex, 1)
+            message.likes += 1
+        }
+        // message not voted on - upvote or downvote
+        else
+        {
+            switch (parsedMethod)
+            {
+                case 'up':
+                    {
+                        user.likedPosts.push(messageId)
+                        message.likes += 1
+                        break
+                    }
+                case 'down':
+                    {
+                        user.dislikedPosts.push(messageId)
+                        message.likes -= 1
+                        break
+                    }
+            }
+        }
+        const savedUser = await user.save()
+        const savedMessage = await message.save()
+
+        res.status(200).json({
+            message: 'Like status updated',
+            likes: savedMessage.likes,
+            userLikedPosts: savedUser.likedPosts,
+            userDislikedPosts: savedUser.dislikedPosts
+        })
+    }
+    catch (err)
+    {
+        console.log(err)
+        res.status(400).json({ message: err.message })
+    }
+
 }
