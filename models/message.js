@@ -17,8 +17,7 @@ const messageSchema = Schema({
         required: true
     },
     repliedTo: {
-        type: Schema.Types.ObjectId,
-        ref: 'Message'
+        type: String
     }
 }, { timestamps: true })
 

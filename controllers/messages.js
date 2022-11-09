@@ -18,6 +18,7 @@ exports.getMessages = async (req, res, next) =>
 
 exports.postMessage = async (req, res, next) =>
 {
+    // console.log('repliedTo:', req.repliedTo)
     try
     {
         const validationResults = validationResult(req)
@@ -33,7 +34,14 @@ exports.postMessage = async (req, res, next) =>
         content: ${content}
         repliedTo: ${repliedTo}
         userId: ${userId}`)
-        const msg = new Message({ content: content, user: userId, repliedTo: repliedTo, likes: 0 })
+        let repliedToUser = null
+        if (repliedTo)
+        {
+            console.log('REPLIED TO NOT NULL')
+            repliedToUser = await User.findById(repliedTo)
+        }
+        console.log('repliedToUser: ', repliedToUser)
+        const msg = new Message({ content: content, user: userId, repliedTo: repliedToUser?.username, likes: 0 })
         const saveRes = await msg.save()
         res.status(200).json({ message: 'POSTED' })
     }
