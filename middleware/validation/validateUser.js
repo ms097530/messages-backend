@@ -8,6 +8,7 @@ exports.validateUser = async (userId, { req }) =>
         throw new Error('User ID must be provided')
     }
     const user = await User.findById(userId)
+    // console.log('user in validateUser: ', user)
     if (!user)
     {
         throw new Error('Unable to find user')

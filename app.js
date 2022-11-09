@@ -22,9 +22,11 @@ app.use('/images', express.static(path.join(__dirname, 'images')))
 app.use(cors())
 
 
-app.use('/messages', body('userId', 'User validation failed')
-    .isString()
-    .custom(validateUser), messageRoutes)
+app.use('/messages',
+    body('userId', 'User validation failed')
+        .isString()
+        .custom(validateUser),
+    messageRoutes)
 app.use('/user', userRoutes)
 
 mongoose.connect(MONGODB_URI)

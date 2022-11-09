@@ -9,7 +9,7 @@ exports.validateMessageId = async (messageId, { req }) =>
         throw new Error('Message ID must be provided')
     }
     const message = await Message.findById(messageId)
-    console.log('Message in validateMessage: ', message)
+    // console.log('Message in validateMessage: ', message)
     if (!message)
     {
         console.log('throwing after not finding message')

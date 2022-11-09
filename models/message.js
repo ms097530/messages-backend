@@ -16,8 +16,21 @@ const messageSchema = Schema({
         type: Schema.Types.Number,
         required: true
     },
+    replies: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: 'Message',
+            required: true
+        }
+    ],
     repliedTo: {
-        type: String
+        messageId: {
+            type: Schema.Types.ObjectId,
+            ref: 'Message'
+        },
+        username: {
+            type: String
+        }
     }
 }, { timestamps: true })
 

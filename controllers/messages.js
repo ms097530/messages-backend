@@ -7,7 +7,10 @@ exports.getMessages = async (req, res, next) =>
 {
     try
     {
+        // order - top level[0], top level[0] reply[0], reply[0] reply2[0]
+        // const messages = await Message.find({ "repliedTo": { "$exists": false } }).populate('user replies')
         const messages = await Message.find().populate('user')
+        // console.log(messages)
         res.status(200).json({ messages: messages })
     }
     catch (err)
@@ -29,20 +32,47 @@ exports.postMessage = async (req, res, next) =>
         }
 
         // message represents content, not an entire Message object
+        // content = string of what the user entered
+        // repliedTo - id of message user is replying to (or null/undefined)
+        // userId - id of user posting message
+        // 1. if repliedTo is null/undefined, it is top-level comment
+        // 2. if not top-level comment, retrieve username of replied to user
         const { content, repliedTo, userId, } = req.body
         console.log(`
         content: ${content}
         repliedTo: ${repliedTo}
         userId: ${userId}`)
-        let repliedToUser = null
+        let repliedToMessage
+        let repliedToInfo = null
         if (repliedTo)
         {
             console.log('REPLIED TO NOT NULL')
-            repliedToUser = await User.findById(repliedTo)
+            repliedToMessage = await Message.findById(repliedTo).populate('user')
+            repliedToInfo =
+            {
+                messageId: repliedTo,
+                username: repliedToMessage.user.username
+            }
+            console.log(repliedToInfo)
         }
-        console.log('repliedToUser: ', repliedToUser)
-        const msg = new Message({ content: content, user: userId, repliedTo: repliedToUser?.username, likes: 0 })
-        const saveRes = await msg.save()
+        // console.log('repliedToUser: ', repliedToUser)
+        const msg = new Message({
+            content: content,
+            user: userId,
+            // null or object with messageId and username
+            repliedTo: repliedToInfo,
+            likes: 0,
+            replies: []
+        })
+        const savedRes = await msg.save()
+        console.log('SAVED RES', savedRes)
+        // add new reply ID to replies array of parent message
+        console.log('before adding to replies of parent message')
+        if (repliedToMessage)
+        {
+            repliedToMessage.replies.push(savedRes._id)
+            await repliedToMessage.save()
+        }
         res.status(200).json({ message: 'POSTED' })
     }
     catch (err)
