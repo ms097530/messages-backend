@@ -164,14 +164,14 @@ exports.updateMessage = async (req, res, next) =>
 
         const message = req.message
         const user = req.user
-        if (message.user.toString() !== user._id.toString())
+        if (message.user.toString() !== userId)
         {
             throw new Error('Invalid user credentials')
         }
 
         message.content = content
         const savedMessage = await message.save()
-        res.status({ message: 'Message successfully editied', content: savedMessage.content })
+        res.status(200).json({ message: 'Message successfully edited', content: savedMessage.content })
     }
     catch (err)
     {
