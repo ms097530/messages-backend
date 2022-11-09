@@ -1,3 +1,5 @@
+const { validationResult } = require('express-validator')
+
 const Message = require('../models/message')
 const User = require('../models/user')
 
@@ -16,22 +18,29 @@ exports.getMessages = async (req, res, next) =>
 
 exports.postMessage = async (req, res, next) =>
 {
-    // message represents content, not an entire Message object
-    const { message, repliedTo, userId, } = req.body
     try
     {
+        const validationResults = validationResult(req)
+        if (!validationResults.isEmpty())
+        {
+            const resultsArr = validationResults.array()
+            throw new Error(resultsArr[0].msg)
+        }
+
+        // message represents content, not an entire Message object
+        const { content, repliedTo, userId, } = req.body
         console.log(`
-        message: ${message}
+        content: ${content}
         repliedTo: ${repliedTo}
         userId: ${userId}`)
-        const msg = new Message({ content: message, user: userId, repliedTo: repliedTo, likes: 0 })
+        const msg = new Message({ content: content, user: userId, repliedTo: repliedTo, likes: 0 })
         const saveRes = await msg.save()
         res.status(200).json({ message: 'POSTED' })
     }
     catch (err)
     {
         console.log(err)
-        res.status(400).json({ message: 'Incorrect info provided' })
+        res.status(400).json({ message: err.message })
     }
 }
 
@@ -41,13 +50,15 @@ exports.deleteMessage = async (req, res, next) =>
     // return messageId
     try
     {
+        const validationResults = validationResult(req)
+        if (!validationResults.isEmpty())
+        {
+            const resultsArr = validationResults.array()
+            throw new Error(resultsArr[0].msg)
+        }
         const { userId } = req.body
         const { messageId } = req.params
-        if (!messageId)
-        {
-            throw new Error('No message ID provided')
-        }
-        const message = await Message.findById(messageId)
+        const message = req.message
         if (message.user.toString() !== userId)
         {
             throw new Error('Invalid user credentials')
@@ -69,32 +80,18 @@ exports.updateLikes = async (req, res, next) =>
 {
     try
     {
-        const { userId, method } = req.body
-        const { messageId } = req.params
-        if (!messageId)
+        const validationResults = validationResult(req)
+        if (!validationResults.isEmpty())
         {
-            throw new Error('Must provide valid messageId')
-        }
-        if (!method)
-        {
-            throw new Error('Must provide method')
-        }
-        let parsedMethod = method.toLowerCase()
-        if (parsedMethod !== 'up' && parsedMethod !== 'down')
-        {
-            throw new Error('Invalid method specified')
+            const resultsArr = validationResults.array()
+            throw new Error(resultsArr[0].msg)
         }
 
-        const message = await Message.findById(messageId)
-        if (!message)
-        {
-            throw new Error('Message not found')
-        }
-        const user = await User.findById(userId)
-        if (!user)
-        {
-            throw new Error('User not found')
-        }
+        const { userId, method } = req.body
+        const { messageId } = req.params
+
+        const message = req.message
+        const user = req.user
         if (message.user.toString() === userId)
         {
             throw new Error('Can not vote on your own message')
@@ -117,6 +114,7 @@ exports.updateLikes = async (req, res, next) =>
         // message not voted on - upvote or downvote
         else
         {
+            const parsedMethod = req.parsedMethod
             switch (parsedMethod)
             {
                 case 'up':
@@ -155,31 +153,17 @@ exports.updateMessage = async (req, res, next) =>
 {
     try
     {
+        const validationResults = validationResult(req)
+        if (!validationResults.isEmpty())
+        {
+            const resultsArr = validationResults.array()
+            throw new Error(resultsArr[0].msg)
+        }
         const { userId, content } = req.body
         const { messageId } = req.params
-        if (!messageId)
-        {
-            throw new Error('Must provide message ID')
-        }
-        if (!userId)
-        {
-            throw new Error('Must provide user ID')
-        }
-        if (!content)
-        {
-            throw new Error('Must provide message body')
-        }
 
-        const message = await Message.findById(messageId)
-        if (!message)
-        {
-            throw new Error('Unable to find message')
-        }
-        const user = await User.findById(userId)
-        if (!user)
-        {
-            throw new Error('Unable to find user')
-        }
+        const message = req.message
+        const user = req.user
         if (message.user.toString() !== user._id.toString())
         {
             throw new Error('Invalid user credentials')

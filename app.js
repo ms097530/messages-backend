@@ -5,9 +5,11 @@ const mongoose = require('mongoose')
 const dotenv = require('dotenv').config()
 const cors = require('cors')
 const bodyParser = require('body-parser')
+const { body } = require('express-validator')
 
 const messageRoutes = require('./routes/messages')
 const userRoutes = require('./routes/user')
+const { validateUser } = require('./middleware/validation/validateUser')
 
 const PORT = 8000
 const pw = process.env.MONGO_PW
@@ -20,7 +22,9 @@ app.use('/images', express.static(path.join(__dirname, 'images')))
 app.use(cors())
 
 
-app.use('/messages', messageRoutes)
+app.use('/messages', body('userId', 'User validation failed')
+    .isString()
+    .custom(validateUser), messageRoutes)
 app.use('/user', userRoutes)
 
 mongoose.connect(MONGODB_URI)
