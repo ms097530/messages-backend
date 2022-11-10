@@ -86,6 +86,8 @@ exports.deleteMessage = async (req, res, next) =>
 {
     // expect to receive userId, messageId
     // return messageId
+
+    // need to remove message being deleted from replies array of parent message
     try
     {
         const validationResults = validationResult(req)
@@ -101,9 +103,14 @@ exports.deleteMessage = async (req, res, next) =>
         {
             throw new Error('Invalid user credentials')
         }
-
-        const removeResponse = await message.remove()
-        console.log(removeResponse)
+        const parentMessage = await Message.findById(message.repliedTo.messageId)
+        console.log('parentMessage: ', parentMessage)
+        console.log('before filtering: ', parentMessage.replies)
+        parentMessage.replies = parentMessage.replies.filter(replyId => messageId.toString() !== replyId.toString())
+        console.log('after filtering: ', parentMessage.replies)
+        const removedResponse = await message.remove()
+        const updatedParent = await parentMessage.save()
+        console.log(removedResponse)
 
         res.status(200).json({ message: 'Message successfully deleted', messageId: messageId })
     }
