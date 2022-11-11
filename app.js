@@ -32,8 +32,13 @@ app.use('/user', userRoutes)
 mongoose.connect(MONGODB_URI)
     .then(() =>
     {
-        app.listen(PORT, () =>
+        const server = app.listen(PORT, () =>
         {
             console.log('listening on port ' + PORT)
+        })
+        const io = require('./util/socket').init(server)
+        io.on('connection', socket =>
+        {
+            console.log('Client connected')
         })
     })
