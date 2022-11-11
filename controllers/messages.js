@@ -2,6 +2,7 @@ const { validationResult } = require('express-validator')
 
 const Message = require('../models/message')
 const User = require('../models/user')
+const io = require('../util/socket')
 
 exports.getMessages = async (req, res, next) =>
 {
@@ -73,6 +74,15 @@ exports.postMessage = async (req, res, next) =>
             repliedToMessage.replies.push(savedRes._id)
             await repliedToMessage.save()
         }
+
+        const populatedMsg = await msg.populate('user')
+        const connection = io.getIO()
+        connection.emit('messages', {
+            action: 'create',
+            message: {
+                ...msg.toObject()
+            }
+        })
         res.status(200).json({ message: 'POSTED' })
     }
     catch (err)
@@ -105,11 +115,16 @@ exports.deleteMessage = async (req, res, next) =>
         }
         const parentMessage = await Message.findById(message.repliedTo.messageId)
         console.log('parentMessage: ', parentMessage)
-        console.log('before filtering: ', parentMessage.replies)
-        parentMessage.replies = parentMessage.replies.filter(replyId => messageId.toString() !== replyId.toString())
-        console.log('after filtering: ', parentMessage.replies)
+        // only execute if the message being deleted is a reply
+        if (parentMessage)
+        {
+            console.log('before filtering: ', parentMessage.replies)
+            parentMessage.replies = parentMessage.replies.filter(replyId => messageId.toString() !== replyId.toString())
+            console.log('after filtering: ', parentMessage.replies)
+            const updatedParent = await parentMessage.save()
+        }
         const removedResponse = await message.remove()
-        const updatedParent = await parentMessage.save()
+
         console.log(removedResponse)
 
         res.status(200).json({ message: 'Message successfully deleted', messageId: messageId })
