@@ -31,6 +31,9 @@ const messageSchema = Schema({
         username: {
             type: String
         }
+    },
+    isDeleted: {
+        type: Boolean
     }
 }, { timestamps: true })
 

@@ -2,7 +2,7 @@ const { validationResult } = require('express-validator')
 
 const Message = require('../models/message')
 const User = require('../models/user')
-const io = require('../util/socket')
+const { getIO } = require('../util/socket')
 
 exports.getMessages = async (req, res, next) =>
 {
@@ -75,8 +75,9 @@ exports.postMessage = async (req, res, next) =>
             await repliedToMessage.save()
         }
 
+        // populate will affect msg but also return the altered document, so can use either below
         const populatedMsg = await msg.populate('user')
-        const connection = io.getIO()
+        const connection = getIO()
         connection.emit('messages', {
             action: 'create',
             message: {
@@ -113,20 +114,25 @@ exports.deleteMessage = async (req, res, next) =>
         {
             throw new Error('Invalid user credentials')
         }
-        const parentMessage = await Message.findById(message.repliedTo.messageId)
-        console.log('parentMessage: ', parentMessage)
-        // only execute if the message being deleted is a reply
-        if (parentMessage)
-        {
-            console.log('before filtering: ', parentMessage.replies)
-            parentMessage.replies = parentMessage.replies.filter(replyId => messageId.toString() !== replyId.toString())
-            console.log('after filtering: ', parentMessage.replies)
-            const updatedParent = await parentMessage.save()
-        }
-        const removedResponse = await message.remove()
+        // const parentMessage = await Message.findById(message.repliedTo.messageId)
+        // console.log('parentMessage: ', parentMessage)
+        // // only execute if the message being deleted is a reply
+        // if (parentMessage)
+        // {
+        //     console.log('before filtering: ', parentMessage.replies)
+        //     parentMessage.replies = parentMessage.replies.filter(replyId => messageId.toString() !== replyId.toString())
+        //     console.log('after filtering: ', parentMessage.replies)
+        //     const updatedParent = await parentMessage.save()
+        // }
+        // const removedResponse = await message.remove()
 
-        console.log(removedResponse)
+        // console.log(removedResponse)
 
+        message.isDeleted = true
+        await message.save()
+
+        const connection = getIO()
+        connection.emit('messages', { action: 'delete', messageId: messageId })
         res.status(200).json({ message: 'Message successfully deleted', messageId: messageId })
     }
     catch (err)
@@ -161,6 +167,7 @@ exports.updateLikes = async (req, res, next) =>
         const likedPostIndex = user.likedPosts.findIndex((id) => id.toString() === messageId)
         const dislikedPostIndex = user.dislikedPosts.findIndex((id) => id.toString() === messageId)
         // check if message has already been voted on by this user
+        const parsedMethod = req.parsedMethod
         if (likedPostIndex >= 0)
         {
             user.likedPosts.splice(likedPostIndex, 1)
@@ -174,7 +181,6 @@ exports.updateLikes = async (req, res, next) =>
         // message not voted on - upvote or downvote
         else
         {
-            const parsedMethod = req.parsedMethod
             switch (parsedMethod)
             {
                 case 'up':
@@ -194,6 +200,8 @@ exports.updateLikes = async (req, res, next) =>
         const savedUser = await user.save()
         const savedMessage = await message.save()
 
+        const connection = getIO()
+        connection.emit('messages', { action: 'update', actionType: 'likes-' + parsedMethod, messageId: messageId })
         res.status(200).json({
             message: 'Like status updated',
             likes: savedMessage.likes,
@@ -231,6 +239,11 @@ exports.updateMessage = async (req, res, next) =>
 
         message.content = content
         const savedMessage = await message.save()
+        const connection = getIO()
+        connection.emit('messages', {
+            action: 'update', actionType: 'edit-content',
+            messageId: messageId, content: content
+        })
         res.status(200).json({ message: 'Message successfully edited', content: savedMessage.content })
     }
     catch (err)
