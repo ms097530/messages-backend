@@ -15,6 +15,10 @@ exports.validateMessageId = async (messageId, { req }) =>
         console.log('throwing after not finding message')
         throw new Error('Unable to find message')
     }
+    if (message.isDeleted)
+    {
+        throw new Error('Message has been deleted already.')
+    }
 
     req.message = message
     return true
