@@ -12,8 +12,11 @@ const userRoutes = require('./routes/user')
 const { validateUser } = require('./middleware/validation/validateUser')
 
 const PORT = 8000
+const username = process.env.MONGO_USERNAME
 const pw = process.env.MONGO_PW
-const MONGODB_URI = `mongodb+srv://ms097530:${pw}@dev.btceb4a.mongodb.net/?retryWrites=true&w=majority`
+const env = process.env.NODE_ENV || 'development'
+const db = env === 'development' ? 'test' : 'production'
+const MONGODB_URI = `mongodb+srv://${username}:${pw}@dev.btceb4a.mongodb.net/${db}?retryWrites=true&w=majority`
 
 const app = express()
 
@@ -32,6 +35,7 @@ app.use('/user', userRoutes)
 mongoose.connect(MONGODB_URI)
     .then(() =>
     {
+        console.log('connected to MONGODB')
         const server = app.listen(PORT, () =>
         {
             console.log('listening on port ' + PORT)
