@@ -2,7 +2,7 @@ const User = require('../../models/user')
 
 exports.validateUser = async (userId, { req }) =>
 {
-    console.log('validating user')
+    // console.log('validating user')
     if (!userId)
     {
         throw new Error('User ID must be provided')

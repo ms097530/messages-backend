@@ -39,22 +39,22 @@ exports.postMessage = async (req, res, next) =>
         // 1. if repliedTo is null/undefined, it is top-level comment
         // 2. if not top-level comment, retrieve username of replied to user
         const { content, repliedTo, userId, } = req.body
-        console.log(`
-        content: ${content}
-        repliedTo: ${repliedTo}
-        userId: ${userId}`)
+        // console.log(`
+        // content: ${content}
+        // repliedTo: ${repliedTo}
+        // userId: ${userId}`)
         let repliedToMessage
         let repliedToInfo = null
         if (repliedTo)
         {
-            console.log('REPLIED TO NOT NULL')
+            // console.log('REPLIED TO NOT NULL')
             repliedToMessage = await Message.findById(repliedTo).populate('user')
             repliedToInfo =
             {
                 messageId: repliedTo,
                 username: repliedToMessage.user.username
             }
-            console.log(repliedToInfo)
+            // console.log(repliedToInfo)
         }
         // console.log('repliedToUser: ', repliedToUser)
         const msg = new Message({
@@ -66,9 +66,9 @@ exports.postMessage = async (req, res, next) =>
             replies: []
         })
         const savedRes = await msg.save()
-        console.log('SAVED RES', savedRes)
+        // console.log('SAVED RES', savedRes)
         // add new reply ID to replies array of parent message
-        console.log('before adding to replies of parent message')
+        // console.log('before adding to replies of parent message')
         if (repliedToMessage)
         {
             repliedToMessage.replies.push(savedRes._id)
@@ -88,7 +88,7 @@ exports.postMessage = async (req, res, next) =>
     }
     catch (err)
     {
-        console.log(err)
+        // console.log(err)
         res.status(400).json({ message: err.message })
     }
 }
@@ -137,7 +137,7 @@ exports.deleteMessage = async (req, res, next) =>
     }
     catch (err)
     {
-        console.log(err)
+        // console.log(err)
         res.status(400).json({ message: err.message })
     }
 }
@@ -211,7 +211,7 @@ exports.updateLikes = async (req, res, next) =>
     }
     catch (err)
     {
-        console.log(err)
+        // console.log(err)
         res.status(400).json({ message: err.message })
     }
 
@@ -248,7 +248,7 @@ exports.updateMessage = async (req, res, next) =>
     }
     catch (err)
     {
-        console.log(err)
+        // console.log(err)
         res.status(400).json({ message: err.message })
     }
 }
